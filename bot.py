@@ -2,6 +2,8 @@ from dotenv import load_dotenv
 from pathlib import Path
 import os
 import re
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 import google.generativeai as genai
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
@@ -177,6 +179,21 @@ app.add_handler(CommandHandler("reply", reply_to_customer))
 app.add_handler(CommandHandler("update", reply_to_customer))
 app.add_handler(MessageHandler(filters.COMMAND & ~filters.User(OWNER_CHAT_ID), handle_user_command))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+# --- Health check server for Render ---
+class _HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"OK")
+    def log_message(self, *args):
+        pass
+
+def _start_health_server():
+    port = int(os.environ.get("PORT", 10000))
+    HTTPServer(("0.0.0.0", port), _HealthHandler).serve_forever()
+
+threading.Thread(target=_start_health_server, daemon=True).start()
 
 print("Bot is running...")
 app.run_polling()
