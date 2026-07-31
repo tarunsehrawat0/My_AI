@@ -255,7 +255,12 @@ async def setup_webhook():
 
 if __name__ == "__main__":
     import asyncio
-    print("Bot is running...")
+    print("=== Bot starting ===")
+    print(f"OpenAI configured with key: {OPENAI_API_KEY[:6]}***")
+    print(f"PORT: {PORT}")
+    print(f"RENDER_EXTERNAL_URL: {RENDER_EXTERNAL_URL}")
+    print(f"WEBHOOK_URL: {WEBHOOK_URL}")
+    print("=== Starting webhook setup ===")
     
     # Always use webhook mode on Render
     asyncio.run(setup_webhook())
