@@ -200,11 +200,15 @@ WEBHOOK_URL = f"{RENDER_EXTERNAL_URL}/webhook"
 
 async def webhook_handler(request):
     """Handle incoming webhook updates from Telegram"""
+    print(f"Webhook received request: {request.method}")
     if request.method == "POST":
         try:
+            data = await request.json()
+            print(f"Webhook received data: {data}")
             await app.update_queue.put(
-                Update.de_json(data=await request.json(), bot=app.bot)
+                Update.de_json(data=data, bot=app.bot)
             )
+            print("Webhook data queued successfully")
         except Exception as e:
             print(f"Webhook error: {e}")
             return web.Response(status=400, text=f"Error: {e}")
@@ -216,8 +220,23 @@ async def health_check(request):
 
 async def setup_webhook():
     """Set up the webhook for Telegram bot"""
-    await app.bot.set_webhook(url=WEBHOOK_URL)
-    print(f"Webhook set to: {WEBHOOK_URL}")
+    try:
+        webhook_info = await app.bot.get_webhook_info()
+        print(f"Current webhook info: {webhook_info}")
+        
+        await app.bot.set_webhook(url=WEBHOOK_URL)
+        print(f"Webhook set to: {WEBHOOK_URL}")
+        
+        # Verify webhook was set
+        webhook_info = await app.bot.get_webhook_info()
+        print(f"Updated webhook info: {webhook_info}")
+        
+        if webhook_info.url != WEBHOOK_URL:
+            print(f"ERROR: Webhook not set correctly. Expected: {WEBHOOK_URL}, Got: {webhook_info.url}")
+            return False
+    except Exception as e:
+        print(f"Error setting webhook: {e}")
+        return False
 
     # Start aiohttp server
     web_app = web.Application()
