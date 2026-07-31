@@ -1,14 +1,10 @@
 from dotenv import load_dotenv
 from pathlib import Path
 import os
-import re
-import threading
-import time
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.request import urlopen
 from openai import OpenAI
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
+from aiohttp import web
 
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -191,35 +187,47 @@ app.add_handler(CommandHandler("update", reply_to_customer))
 app.add_handler(MessageHandler(filters.COMMAND & ~filters.User(OWNER_CHAT_ID), handle_user_command))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-# --- Health check server for Render ---
-class _HealthHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"OK")
-    def log_message(self, *args):
-        pass
+# --- Webhook setup for Render ---
+PORT = int(os.environ.get("PORT", 10000))
+RENDER_EXTERNAL_URL = os.environ.get("RENDER_EXTERNAL_URL")
+WEBHOOK_URL = f"{RENDER_EXTERNAL_URL}/webhook" if RENDER_EXTERNAL_URL else None
 
-def _start_health_server():
-    port = int(os.environ.get("PORT", 10000))
-    HTTPServer(("0.0.0.0", port), _HealthHandler).serve_forever()
+async def webhook_handler(request):
+    """Handle incoming webhook updates from Telegram"""
+    await app.update_queue.put(
+        Update.de_json(data=await request.json(), bot=app.bot)
+    )
+    return web.Response(status=200)
 
-threading.Thread(target=_start_health_server, daemon=True).start()
+async def health_check(request):
+    """Health check endpoint for Render"""
+    return web.Response(text="OK", status=200)
 
-# --- Self-ping to prevent Render free tier spin-down ---
-def _self_ping():
-    render_url = os.environ.get("RENDER_EXTERNAL_URL")
-    if not render_url:
-        print("RENDER_EXTERNAL_URL not set — self-ping disabled (local mode).")
+async def setup_webhook():
+    """Set up the webhook for Telegram bot"""
+    if WEBHOOK_URL:
+        await app.bot.set_webhook(url=WEBHOOK_URL)
+        print(f"Webhook set to: {WEBHOOK_URL}")
+    else:
+        print("RENDER_EXTERNAL_URL not set - running in polling mode (local development)")
+        app.run_polling()
         return
-    while True:
-        time.sleep(600)  # 10 minutes
-        try:
-            urlopen(render_url)
-        except Exception:
-            pass
 
-threading.Thread(target=_self_ping, daemon=True).start()
+    # Start aiohttp server
+    web_app = web.Application()
+    web_app.router.add_post("/webhook", webhook_handler)
+    web_app.router.add_get("/", health_check)
+    
+    runner = web.AppRunner(web_app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", PORT)
+    await site.start()
+    print(f"Server running on port {PORT}")
+    
+    # Keep the application running
+    await asyncio.Event().wait()
 
-print("Bot is running...")
-app.run_polling()
+if __name__ == "__main__":
+    import asyncio
+    print("Bot is running...")
+    asyncio.run(setup_webhook())
