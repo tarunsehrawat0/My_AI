@@ -200,9 +200,14 @@ WEBHOOK_URL = f"{RENDER_EXTERNAL_URL}/webhook"
 
 async def webhook_handler(request):
     """Handle incoming webhook updates from Telegram"""
-    await app.update_queue.put(
-        Update.de_json(data=await request.json(), bot=app.bot)
-    )
+    if request.method == "POST":
+        try:
+            await app.update_queue.put(
+                Update.de_json(data=await request.json(), bot=app.bot)
+            )
+        except Exception as e:
+            print(f"Webhook error: {e}")
+            return web.Response(status=400, text=f"Error: {e}")
     return web.Response(status=200)
 
 async def health_check(request):
@@ -218,6 +223,7 @@ async def setup_webhook():
     web_app = web.Application()
     web_app.router.add_post("/webhook", webhook_handler)
     web_app.router.add_get("/", health_check)
+    web_app.router.add_get("/webhook", lambda request: web.Response(text="Use POST for webhook", status=405))
     
     runner = web.AppRunner(web_app)
     await runner.setup()
