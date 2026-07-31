@@ -91,7 +91,13 @@ Customer Message: {user_question}
         reply = getattr(response, "text", None) or getattr(response, "content", "")
         reply = reply.strip()
     except Exception as e:
-        print(f"Model generation error: {e}")
+        error_msg = f"Model generation error: {type(e).__name__}: {e}"
+        print(error_msg)
+        # Send error to owner for debugging
+        try:
+            await context.bot.send_message(chat_id=OWNER_CHAT_ID, text=f"⚠️ {error_msg}")
+        except Exception:
+            pass
         reply = ""
 
     if reply.strip().upper().startswith("ESCALATE"):
