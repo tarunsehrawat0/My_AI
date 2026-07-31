@@ -189,8 +189,14 @@ app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 # --- Webhook setup for Render ---
 PORT = int(os.environ.get("PORT", 10000))
-RENDER_EXTERNAL_URL = os.environ.get("RENDER_EXTERNAL_URL")
-WEBHOOK_URL = f"{RENDER_EXTERNAL_URL}/webhook" if RENDER_EXTERNAL_URL else None
+# Try multiple possible Render URL environment variables
+RENDER_EXTERNAL_URL = (
+    os.environ.get("RENDER_EXTERNAL_URL") or
+    os.environ.get("RENDER_SERVICE_URL") or
+    os.environ.get("URL") or
+    f"https://{os.environ.get('RENDER_SERVICE_NAME', 'my-aifresh-cuts-bot')}.onrender.com"
+)
+WEBHOOK_URL = f"{RENDER_EXTERNAL_URL}/webhook"
 
 async def webhook_handler(request):
     """Handle incoming webhook updates from Telegram"""
@@ -226,8 +232,5 @@ if __name__ == "__main__":
     import asyncio
     print("Bot is running...")
     
-    if WEBHOOK_URL:
-        asyncio.run(setup_webhook())
-    else:
-        print("RENDER_EXTERNAL_URL not set - running in polling mode (local development)")
-        app.run_polling()
+    # Always use webhook mode on Render
+    asyncio.run(setup_webhook())
