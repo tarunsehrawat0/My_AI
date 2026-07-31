@@ -86,7 +86,7 @@ Customer Message: {user_question}
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=300,
+            max_tokens=3000,
         )
         reply = response.choices[0].message.content.strip()
     except Exception as e:
@@ -205,13 +205,8 @@ async def health_check(request):
 
 async def setup_webhook():
     """Set up the webhook for Telegram bot"""
-    if WEBHOOK_URL:
-        await app.bot.set_webhook(url=WEBHOOK_URL)
-        print(f"Webhook set to: {WEBHOOK_URL}")
-    else:
-        print("RENDER_EXTERNAL_URL not set - running in polling mode (local development)")
-        app.run_polling()
-        return
+    await app.bot.set_webhook(url=WEBHOOK_URL)
+    print(f"Webhook set to: {WEBHOOK_URL}")
 
     # Start aiohttp server
     web_app = web.Application()
@@ -230,4 +225,9 @@ async def setup_webhook():
 if __name__ == "__main__":
     import asyncio
     print("Bot is running...")
-    asyncio.run(setup_webhook())
+    
+    if WEBHOOK_URL:
+        asyncio.run(setup_webhook())
+    else:
+        print("RENDER_EXTERNAL_URL not set - running in polling mode (local development)")
+        app.run_polling()
