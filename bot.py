@@ -30,6 +30,7 @@ else:
 
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel("gemini-2.5-flash")
+print(f"Gemini configured with key: {GEMINI_API_KEY[:6]}***")
 
 base_dir = Path(__file__).resolve().parent
 kb_path = base_dir / "knowledge_base.txt"
