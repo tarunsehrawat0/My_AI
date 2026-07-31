@@ -6,19 +6,19 @@ import threading
 import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.request import urlopen
-import google.generativeai as genai
+from openai import OpenAI
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OWNER_CHAT_ID = os.getenv("OWNER_CHAT_ID")
 
 if not BOT_TOKEN:
     raise SystemExit("Error: BOT_TOKEN is not set in .env")
-if not GEMINI_API_KEY:
-    raise SystemExit("Error: GEMINI_API_KEY is not set in .env")
+if not OPENAI_API_KEY:
+    raise SystemExit("Error: OPENAI_API_KEY is not set in .env")
 
 if OWNER_CHAT_ID:
     try:
@@ -28,9 +28,8 @@ if OWNER_CHAT_ID:
 else:
     raise SystemExit("Error: OWNER_CHAT_ID is not set in .env")
 
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-2.5-flash")
-print(f"Gemini configured with key: {GEMINI_API_KEY[:6]}***")
+client = OpenAI(api_key=OPENAI_API_KEY)
+print(f"OpenAI configured with key: {OPENAI_API_KEY[:6]}***")
 
 base_dir = Path(__file__).resolve().parent
 kb_path = base_dir / "knowledge_base.txt"
@@ -88,9 +87,12 @@ Customer Message: {user_question}
 """
 
     try:
-        response = model.generate_content(prompt)
-        reply = getattr(response, "text", None) or getattr(response, "content", "")
-        reply = reply.strip()
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=300,
+        )
+        reply = response.choices[0].message.content.strip()
     except Exception as e:
         error_msg = f"Model generation error: {type(e).__name__}: {e}"
         print(error_msg)
