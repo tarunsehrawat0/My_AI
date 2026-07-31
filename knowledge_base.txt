@@ -1,0 +1,14 @@
+Business Name: Fresh Cuts Salon
+Timings: Monday to Saturday, 10 AM to 8 PM. Closed on Sundays.
+Location: Sector 14, Gurugram
+
+Services & Prices:
+- Haircut (Men): ₹200
+- Haircut (Women): ₹500
+- Hair Coloring: ₹1500 onwards
+- Beard Trim: ₹100
+- Facial: ₹800
+
+Booking: Walk-ins welcome, or message here to reserve a slot.
+Payment: Cash, UPI, and cards accepted.
+Cancellation Policy: Please inform at least 2 hours before your slot if cancelling.
