@@ -3,7 +3,9 @@ from pathlib import Path
 import os
 import re
 import threading
+import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from urllib.request import urlopen
 import google.generativeai as genai
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
@@ -194,6 +196,21 @@ def _start_health_server():
     HTTPServer(("0.0.0.0", port), _HealthHandler).serve_forever()
 
 threading.Thread(target=_start_health_server, daemon=True).start()
+
+# --- Self-ping to prevent Render free tier spin-down ---
+def _self_ping():
+    render_url = os.environ.get("RENDER_EXTERNAL_URL")
+    if not render_url:
+        print("RENDER_EXTERNAL_URL not set — self-ping disabled (local mode).")
+        return
+    while True:
+        time.sleep(600)  # 10 minutes
+        try:
+            urlopen(render_url)
+        except Exception:
+            pass
+
+threading.Thread(target=_self_ping, daemon=True).start()
 
 print("Bot is running...")
 app.run_polling()
