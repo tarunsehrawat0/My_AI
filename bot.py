@@ -87,6 +87,7 @@ def build_answer(question: str) -> Optional[str]:
         best_line = scored[0][1]
         return f"{best_line}\n\nPlease let me know if you'd like to book or need more details."
 
+
     return None
 
 
@@ -256,7 +257,7 @@ def main() -> None:
     if use_webhook:
         asyncio.run(run_webhook(application))
     else:
-        asyncio.run(run_polling(application))
+        application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 if __name__ == '__main__':
