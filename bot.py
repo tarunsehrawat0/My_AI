@@ -82,7 +82,7 @@ def build_answer(question: str) -> Optional[str]:
     # More flexible token matching - include shorter tokens
     q_tokens = {token for token in re.findall(r'[a-z0-9]+', q) if len(token) > 1}
     
-    # Add common keywords mapping
+    # Add comprehensive keywords mapping
     keyword_map = {
         'time': 'timings',
         'timing': 'timings', 
@@ -90,20 +90,42 @@ def build_answer(question: str) -> Optional[str]:
         'close': 'timings',
         'when': 'timings',
         'hours': 'timings',
+        'hour': 'timings',
         'price': 'prices',
         'cost': 'prices',
-        'rate': 'prices',
-        'charges': 'prices',
-        'money': 'prices',
+        'rate': 'rates',
+        'charges': 'charges',
+        'money': 'payment',
         'pay': 'payment',
         'address': 'location',
         'where': 'location',
         'place': 'location',
         'sit': 'location',
+        'located': 'location',
+        'find': 'location',
         'book': 'booking',
         'appointment': 'booking',
         'reserve': 'booking',
+        'slot': 'booking',
         'cancel': 'cancellation',
+        'contact': 'contact',
+        'call': 'contact',
+        'phone': 'contact',
+        'number': 'contact',
+        'mobile': 'contact',
+        'upi': 'upi',
+        'whatsapp': 'whatsapp',
+        'park': 'parking',
+        'owner': 'owner',
+        'who': 'owner',
+        'name': 'owner',
+        'service': 'services',
+        'facial': 'facial',
+        'hair': 'haircut',
+        'haircut': 'haircut',
+        'beard': 'beard',
+        'color': 'coloring',
+        'colour': 'coloring',
     }
     
     # Map question tokens to knowledge base terms
@@ -113,23 +135,38 @@ def build_answer(question: str) -> Optional[str]:
             expanded_q_tokens.add(keyword_map[token])
         expanded_q_tokens.add(token)
     
-    scored: list[tuple[int, str]] = []
-    for line in kb_lines:
+    # Score each line and track context
+    scored: list[tuple[int, str, int]] = []
+    for idx, line in enumerate(kb_lines):
         line_tokens = {token for token in re.findall(r'[a-z0-9]+', normalize(line)) if len(token) > 1}
         # Calculate match score
         score = len(expanded_q_tokens & line_tokens)
         # Bonus for matching important keywords
-        if any(keyword in line.lower() for keyword in ['timings', 'price', 'location', 'booking']):
+        if any(keyword in line.lower() for keyword in ['timings', 'price', 'location', 'booking', 'contact', 'upi', 'whatsapp', 'parking', 'owner']):
             score += 1
-        if score:
-            scored.append((score, line))
-
+        # Bonus for exact word matches
+        if any(token in line.lower() for token in q_tokens):
+            score += 1
+        if score > 0:
+            scored.append((score, line, idx))
+    
     if scored:
         scored.sort(reverse=True)
-        best_score, best_line = scored[0]
-        # Only return answer if we have a decent match
+        best_score, best_line, best_idx = scored[0]
+        
+        # If we have a good match, return relevant context
         if best_score >= 1:
-            return f"{best_line}\n\nPlease let me know if you'd like to book or need more details."
+            # Get surrounding lines for context
+            context_lines = []
+            start_idx = max(0, best_idx - 1)
+            end_idx = min(len(kb_lines), best_idx + 2)
+            
+            for i in range(start_idx, end_idx):
+                if kb_lines[i].strip():
+                    context_lines.append(kb_lines[i].strip())
+            
+            answer = '\n'.join(context_lines)
+            return f"{answer}\n\nPlease let me know if you'd like to book or need more details."
 
     return None
 
