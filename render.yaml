@@ -7,9 +7,11 @@ services:
     envVars:
       - key: BOT_TOKEN
         sync: false
-      - key: OPENAI_API_KEY
-        sync: false
       - key: OWNER_CHAT_ID
         sync: false
       - key: PORT
         value: 10000
+      - key: USE_WEBHOOK
+        value: true
+      - key: RENDER_EXTERNAL_URL
+        value: https://fresh-cuts-bot.onrender.com
