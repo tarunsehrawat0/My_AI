@@ -149,9 +149,6 @@ async def process_customer_question(update: Update, context: ContextTypes.DEFAUL
         ),
     )
     PENDING_ESCALATIONS[alert.message_id] = update.effective_chat.id
-    await update.message.reply_text(
-        'Sorry, I could not find an answer from the salon information. I have forwarded your question to the owner and they will reply soon.'
-    )
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
