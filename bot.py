@@ -73,20 +73,58 @@ def build_answer(question: str) -> Optional[str]:
         return 'Hi! Welcome to Fresh Cuts Salon 😊 How can I help you today?'
 
     kb_lines = [line.strip() for line in KNOWLEDGE_BASE.splitlines() if line.strip()]
-    q_tokens = {token for token in re.findall(r'[a-z0-9]+', q) if len(token) > 2}
-
+    
+    # More flexible token matching - include shorter tokens
+    q_tokens = {token for token in re.findall(r'[a-z0-9]+', q) if len(token) > 1}
+    
+    # Add common keywords mapping
+    keyword_map = {
+        'time': 'timings',
+        'timing': 'timings', 
+        'open': 'timings',
+        'close': 'timings',
+        'when': 'timings',
+        'hours': 'timings',
+        'price': 'prices',
+        'cost': 'prices',
+        'rate': 'prices',
+        'charges': 'prices',
+        'money': 'prices',
+        'pay': 'payment',
+        'address': 'location',
+        'where': 'location',
+        'place': 'location',
+        'sit': 'location',
+        'book': 'booking',
+        'appointment': 'booking',
+        'reserve': 'booking',
+        'cancel': 'cancellation',
+    }
+    
+    # Map question tokens to knowledge base terms
+    expanded_q_tokens = set()
+    for token in q_tokens:
+        if token in keyword_map:
+            expanded_q_tokens.add(keyword_map[token])
+        expanded_q_tokens.add(token)
+    
     scored: list[tuple[int, str]] = []
     for line in kb_lines:
-        line_tokens = {token for token in re.findall(r'[a-z0-9]+', normalize(line)) if len(token) > 2}
-        score = len(q_tokens & line_tokens)
+        line_tokens = {token for token in re.findall(r'[a-z0-9]+', normalize(line)) if len(token) > 1}
+        # Calculate match score
+        score = len(expanded_q_tokens & line_tokens)
+        # Bonus for matching important keywords
+        if any(keyword in line.lower() for keyword in ['timings', 'price', 'location', 'booking']):
+            score += 1
         if score:
             scored.append((score, line))
 
     if scored:
         scored.sort(reverse=True)
-        best_line = scored[0][1]
-        return f"{best_line}\n\nPlease let me know if you'd like to book or need more details."
-
+        best_score, best_line = scored[0]
+        # Only return answer if we have a decent match
+        if best_score >= 1:
+            return f"{best_line}\n\nPlease let me know if you'd like to book or need more details."
 
     return None
 
