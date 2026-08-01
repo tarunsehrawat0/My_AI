@@ -35,8 +35,10 @@ KB_PATH = BASE_DIR / 'knowledge_base.txt'
 if not KB_PATH.exists():
     KB_PATH.write_text(
         'Business Name: Fresh Cuts Salon\n'
+        'OWNER_NAME: Tarun Sehrawat\n'
         'Timings: Monday to Saturday, 10 AM to 8 PM. Closed on Sundays.\n'
         'Location: Sector 14, Gurugram\n\n'
+        'parking: Free parking available\n'
         'Services & Prices:\n'
         '- Haircut (Men): ₹200\n'
         '- Haircut (Women): ₹500\n'
@@ -45,6 +47,9 @@ if not KB_PATH.exists():
         '- Facial: ₹800\n\n'
         'Booking: Walk-ins welcome, or message here to reserve a slot.\n'
         'Payment: Cash, UPI, and cards accepted.\n'
+        'Contact: 8059049365\n'
+        'UPI: 8059049365@ybl\n'
+        'WhatsApp: 8059049365\n'
         'Cancellation Policy: Please inform at least 2 hours before your slot if cancelling.\n',
         encoding='utf-8',
     )
