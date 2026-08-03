@@ -154,6 +154,24 @@ def build_answer(question: str) -> Optional[str]:
         scored.sort(reverse=True)
         best_score, best_line, best_idx = scored[0]
         
+        # Special handling for price-related questions - return entire price section
+        if any(keyword in q for keyword in ['price', 'cost', 'rate', 'charges', 'money']):
+            # Find the Services & Prices section
+            price_section = []
+            in_price_section = False
+            for line in kb_lines:
+                if 'services' in line.lower() and 'price' in line.lower():
+                    in_price_section = True
+                if in_price_section:
+                    price_section.append(line.strip())
+                    if line.strip() and not any(char.isdigit() for char in line) and 'services' not in line.lower():
+                        # End of price section (line without numbers and not the header)
+                        if len(price_section) > 2:  # Ensure we have at least header + one service
+                            break
+            if price_section:
+                answer = '\n'.join(price_section)
+                return f"{answer}\n\nPlease let me know if you'd like to book or need more details."
+        
         # Only return answer if we have a strong match (higher threshold)
         if best_score >= 2:
             # Get surrounding lines for context, but only if they're related
@@ -186,6 +204,7 @@ async def process_customer_question(update: Update, context: ContextTypes.DEFAUL
         await update.message.reply_text(answer)
         return
 
+    logger.info(f'Escalating question from {user_name}: {user_question}')
     alert = await context.bot.send_message(
         chat_id=OWNER_CHAT_ID,
         text=(
@@ -195,6 +214,7 @@ async def process_customer_question(update: Update, context: ContextTypes.DEFAUL
         ),
     )
     PENDING_ESCALATIONS[alert.message_id] = update.effective_chat.id
+    logger.info(f'Escalation stored: message_id={alert.message_id}, chat_id={update.effective_chat.id}')
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
