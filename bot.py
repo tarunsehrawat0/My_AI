@@ -155,7 +155,7 @@ def build_answer(question: str) -> Optional[str]:
         best_score, best_line, best_idx = scored[0]
         
         # Special handling for price-related questions - return entire price section
-        if any(keyword in q for keyword in ['price', 'cost', 'rate', 'charges', 'money']):
+        if any(keyword in q for keyword in ['price', 'cost', 'rate', 'charges', 'money', 'service', 'services']):
             # Find the Services & Prices section
             price_section = []
             in_price_section = False
@@ -172,14 +172,15 @@ def build_answer(question: str) -> Optional[str]:
                 answer = '\n'.join(price_section)
                 return f"{answer}\n\nPlease let me know if you'd like to book or need more details."
         
-        # Special handling for payment/UPI/contact questions
-        if any(keyword in q for keyword in ['payment', 'pay', 'upi', 'contact', 'phone', 'whatsapp', 'number']):
-            payment_lines = []
+        # Special handling for parking, owner, location, timings, booking
+        if any(keyword in q for keyword in ['park', 'parking', 'owner', 'who', 'name', 'location', 'where', 'address', 'timing', 'time', 'hour', 'open', 'close', 'book', 'appointment', 'reserve', 'cancel']):
+            relevant_lines = []
             for line in kb_lines:
-                if any(term in line.lower() for term in ['payment', 'upi', 'contact', 'whatsapp']):
-                    payment_lines.append(line.strip())
-            if payment_lines:
-                answer = '\n'.join(payment_lines)
+                line_lower = line.lower()
+                if any(term in line_lower for term in ['parking', 'owner', 'location', 'timing', 'book', 'cancel']):
+                    relevant_lines.append(line.strip())
+            if relevant_lines:
+                answer = '\n'.join(relevant_lines)
                 return f"{answer}\n\nPlease let me know if you'd like to book or need more details."
         
         # Only return answer if we have a strong match (higher threshold)
