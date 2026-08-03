@@ -172,6 +172,16 @@ def build_answer(question: str) -> Optional[str]:
                 answer = '\n'.join(price_section)
                 return f"{answer}\n\nPlease let me know if you'd like to book or need more details."
         
+        # Special handling for payment/UPI/contact questions
+        if any(keyword in q for keyword in ['payment', 'pay', 'upi', 'contact', 'phone', 'whatsapp', 'number']):
+            payment_lines = []
+            for line in kb_lines:
+                if any(term in line.lower() for term in ['payment', 'upi', 'contact', 'whatsapp']):
+                    payment_lines.append(line.strip())
+            if payment_lines:
+                answer = '\n'.join(payment_lines)
+                return f"{answer}\n\nPlease let me know if you'd like to book or need more details."
+        
         # Only return answer if we have a strong match (higher threshold)
         if best_score >= 2:
             # Get surrounding lines for context, but only if they're related
