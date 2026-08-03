@@ -154,19 +154,23 @@ def build_answer(question: str) -> Optional[str]:
         scored.sort(reverse=True)
         best_score, best_line, best_idx = scored[0]
         
-        # If we have a good match, return relevant context
-        if best_score >= 1:
-            # Get surrounding lines for context
+        # Only return answer if we have a strong match (higher threshold)
+        if best_score >= 2:
+            # Get surrounding lines for context, but only if they're related
             context_lines = []
             start_idx = max(0, best_idx - 1)
             end_idx = min(len(kb_lines), best_idx + 2)
             
             for i in range(start_idx, end_idx):
                 if kb_lines[i].strip():
-                    context_lines.append(kb_lines[i].strip())
+                    # Only include line if it shares some tokens with the question
+                    line_tokens = {token for token in re.findall(r'[a-z0-9]+', normalize(kb_lines[i])) if len(token) > 1}
+                    if len(expanded_q_tokens & line_tokens) > 0:
+                        context_lines.append(kb_lines[i].strip())
             
-            answer = '\n'.join(context_lines)
-            return f"{answer}\n\nPlease let me know if you'd like to book or need more details."
+            if context_lines:
+                answer = '\n'.join(context_lines)
+                return f"{answer}\n\nPlease let me know if you'd like to book or need more details."
 
     return None
 
